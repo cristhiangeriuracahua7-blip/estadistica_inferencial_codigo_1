@@ -1,0 +1,696 @@
+
+# PROYECTO: USO DE TRANSPORTE PÚBLICO Y GASTO MENSUAL
+# UNIVERSIDAD TECNOLÓGICA DEL PERÚ - SEDE AREQUIPA - 2026
+
+
+
+# 1. CARGAR LIBRERÍAS
+
+
+library(readxl)
+library(ggplot2)
+
+
+
+# 2. LEER LA BASE DE DATOS
+
+
+datos <- read_excel(
+  "Base_Datos.xlsx",
+  sheet = "Respuestas de formulario 1"
+)
+
+cat("Número de estudiantes:", nrow(datos), "\n")
+cat("Número de variables:", ncol(datos), "\n")
+
+
+
+# 3. PREPARAR LAS VARIABLES
+
+
+edad <- datos[[1]]
+genero <- datos[[2]]
+ciclo <- datos[[3]]
+usa_transporte <- datos[[4]]
+tipo_transporte <- datos[[5]]
+dias_semana <- datos[[6]]
+viajes_semana <- datos[[7]]
+pasaje <- datos[[8]]
+gasto_mensual <- as.numeric(datos[[9]])
+caminar <- datos[[10]]
+medio_pasaje <- datos[[11]]
+
+
+# ============================================================
+# 4. CREAR DATA FRAME
+# ============================================================
+
+df <- data.frame(
+  edad = edad,
+  genero = genero,
+  ciclo = ciclo,
+  usa_transporte = usa_transporte,
+  tipo_transporte = tipo_transporte,
+  dias_semana = dias_semana,
+  viajes_semana = viajes_semana,
+  pasaje = pasaje,
+  gasto_mensual = gasto_mensual,
+  caminar = caminar,
+  medio_pasaje = medio_pasaje
+)
+
+# Eliminar valores faltantes del gasto
+gasto <- df$gasto_mensual
+gasto <- gasto[!is.na(gasto)]
+
+n <- length(gasto)
+
+
+
+# 5. ESTADÍSTICAS DESCRIPTIVAS
+
+
+calcular_moda <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+media_val <- mean(gasto)
+mediana_val <- median(gasto)
+moda_val <- calcular_moda(gasto)
+de_val <- sd(gasto)
+varianza_val <- var(gasto)
+min_val <- min(gasto)
+max_val <- max(gasto)
+rango_val <- max_val - min_val
+cv_val <- (de_val / media_val) * 100
+
+
+
+# 6. MEDIDAS DE FORMA
+
+m <- mean(gasto)
+s <- sd(gasto)
+
+# Asimetría
+asimetria_val <- (
+  n / ((n - 1) * (n - 2))
+) * sum(
+  ((gasto - m) / s)^3
+)
+
+# Curtosis
+curtosis_val <- (
+  n * (n + 1) /
+    ((n - 1) * (n - 2) * (n - 3))
+) * sum(
+  ((gasto - m) / s)^4
+) -
+  (3 * (n - 1)^2 /
+     ((n - 2) * (n - 3)))
+
+
+
+# 7. MOSTRAR ESTADÍSTICAS
+
+
+cat("\n")
+cat("============================================\n")
+cat("ESTADÍSTICAS DEL GASTO MENSUAL\n")
+cat("============================================\n")
+
+cat("N:", n, "\n")
+cat(sprintf("Media: S/ %.2f\n", media_val))
+cat(sprintf("Mediana: S/ %.2f\n", mediana_val))
+cat(sprintf("Moda: S/ %.2f\n", moda_val))
+cat(sprintf("Desviación estándar: S/ %.2f\n", de_val))
+cat(sprintf("Varianza: %.2f\n", varianza_val))
+cat(sprintf("Mínimo: S/ %.2f\n", min_val))
+cat(sprintf("Máximo: S/ %.2f\n", max_val))
+cat(sprintf("Rango: S/ %.2f\n", rango_val))
+cat(sprintf("CV: %.2f%%\n", cv_val))
+cat(sprintf("Asimetría: %.4f\n", asimetria_val))
+cat(sprintf("Curtosis: %.4f\n", curtosis_val))
+
+
+# ============================================================
+# 8. ESTUDIANTES CON GASTO >= S/100
+# ============================================================
+
+estudiantes_100_mas <- sum(gasto >= 100)
+total_estudiantes <- length(gasto)
+proporcion <- estudiantes_100_mas / total_estudiantes
+
+cat("\n")
+cat("============================================\n")
+cat("ESTUDIANTES CON GASTO >= S/100\n")
+cat("============================================\n")
+
+cat("Estudiantes con gasto >= S/100:",
+    estudiantes_100_mas, "\n")
+
+cat("Total de estudiantes:",
+    total_estudiantes, "\n")
+
+cat("Proporción:",
+    round(proporcion, 4), "\n")
+
+cat("Porcentaje:",
+    round(proporcion * 100, 2), "%\n")
+
+
+
+# 9. FIGURA 1
+# DISTRIBUCIÓN DEL GASTO MENSUAL
+
+
+hist(
+  gasto,
+  main = "Distribución del gasto mensual en transporte",
+  xlab = "Gasto mensual (S/)",
+  ylab = "Frecuencia",
+  col = "lightblue",
+  border = "black"
+)
+
+
+
+# 10. FIGURA 2
+# DÍAS POR SEMANA QUE UTILIZAN TRANSPORTE
+
+
+tabla_dias <- table(dias_semana)
+
+barplot(
+  tabla_dias,
+  main = "Días por semana que utilizan transporte público",
+  xlab = "Días por semana",
+  ylab = "Frecuencia",
+  col = "lightgreen",
+  border = "black",
+  las = 2
+)
+
+
+
+# 11. FIGURA 3
+# TIPO DE TRANSPORTE
+
+
+tabla_transporte <- table(tipo_transporte)
+
+barplot(
+  tabla_transporte,
+  main = "Tipo de transporte público utilizado",
+  xlab = "Tipo de transporte",
+  ylab = "Frecuencia",
+  col = "orange",
+  border = "black"
+)
+
+
+
+# 12. FIGURA 4
+# VIAJES POR SEMANA VS GASTO MENSUAL
+
+
+plot(
+  viajes_semana,
+  gasto_mensual,
+  main = "Relación entre viajes por semana y gasto mensual",
+  xlab = "Viajes en transporte público por semana",
+  ylab = "Gasto mensual en transporte (S/)",
+  pch = 19,
+  col = "blue"
+)
+
+modelo <- lm(
+  gasto_mensual ~ viajes_semana
+)
+
+abline(
+  modelo,
+  col = "red",
+  lwd = 2
+)
+
+
+
+# 13. FIGURA 5
+# DISTRIBUCIÓN MUESTRAL DE LA MEDIA
+
+
+media <- mean(gasto)
+desv <- sd(gasto)
+n <- length(gasto)
+
+error_estandar <- desv / sqrt(n)
+
+x_media <- seq(
+  media - 4 * error_estandar,
+  media + 4 * error_estandar,
+  length.out = 500
+)
+
+y_media <- dnorm(
+  x_media,
+  mean = media,
+  sd = error_estandar
+)
+
+datos_media <- data.frame(
+  x = x_media,
+  y = y_media
+)
+
+grafico_media <- ggplot(
+  datos_media,
+  aes(x = x, y = y)
+) +
+  geom_line(
+    color = "blue",
+    linewidth = 1.2
+  ) +
+  geom_vline(
+    xintercept = media,
+    color = "red",
+    linewidth = 1
+  ) +
+  labs(
+    title = "Distribución muestral de la media del gasto mensual",
+    x = "Media muestral del gasto (S/)",
+    y = "Densidad"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(
+      face = "bold",
+      hjust = 0.5
+    )
+  )
+
+print(grafico_media)
+
+
+
+# 14. FIGURA 6
+# ESTUDIANTES SEGÚN GASTO MENSUAL
+
+
+gasto_100 <- ifelse(
+  gasto >= 100,
+  "Gasto ≥ S/100",
+  "Gasto < S/100"
+)
+
+tabla_gasto_100 <- table(gasto_100)
+
+barplot(
+  tabla_gasto_100,
+  main = "Estudiantes según gasto mensual en transporte",
+  xlab = "Categoría de gasto",
+  ylab = "Frecuencia",
+  col = c("lightblue", "purple"),
+  border = "black"
+)
+
+
+
+# 15. FIGURA 7
+# DISTRIBUCIÓN MUESTRAL DE LA PROPORCIÓN
+
+
+n_prop <- length(gasto)
+
+x_exitos <- sum(gasto >= 100)
+
+p_hat <- x_exitos / n_prop
+q_hat <- 1 - p_hat
+
+error_prop <- sqrt(
+  (p_hat * q_hat) / n_prop
+)
+
+z_critico <- 1.96
+
+x_prop <- seq(
+  p_hat - 4 * error_prop,
+  p_hat + 4 * error_prop,
+  length.out = 500
+)
+
+y_prop <- dnorm(
+  x_prop,
+  mean = p_hat,
+  sd = error_prop
+)
+
+datos_prop <- data.frame(
+  x = x_prop,
+  y = y_prop
+)
+
+grafico_prop <- ggplot(
+  datos_prop,
+  aes(x = x, y = y)
+) +
+  geom_line(
+    color = "darkgreen",
+    linewidth = 1.2
+  ) +
+  geom_vline(
+    xintercept = p_hat,
+    color = "red",
+    linewidth = 1
+  ) +
+  labs(
+    title = "Distribución muestral de la proporción",
+    x = "Proporción muestral",
+    y = "Densidad"
+  ) +
+  theme_classic() +
+  theme(
+    plot.title = element_text(
+      face = "bold",
+      hjust = 0.5
+    )
+  )
+
+print(grafico_prop)
+
+
+
+# 16. 5.3.1
+# INTERVALO DE CONFIANZA PARA LA MEDIA DEL GASTO
+
+
+media <- mean(gasto)
+desv <- sd(gasto)
+n <- length(gasto)
+
+error_estandar <- desv / sqrt(n)
+
+# Valor crítico t
+t_critico <- qt(
+  0.975,
+  df = n - 1
+)
+
+# Intervalo de confianza
+li <- media - t_critico * error_estandar
+ls <- media + t_critico * error_estandar
+
+cat("\n")
+cat("============================================\n")
+cat("5.3.1. INTERVALO DE CONFIANZA PARA LA MEDIA\n")
+cat("============================================\n")
+
+cat(sprintf("Tamaño de muestra: %d\n", n))
+cat(sprintf("Media: S/ %.2f\n", media))
+cat(sprintf("Desviación estándar: S/ %.2f\n", desv))
+cat(sprintf("Error estándar: S/ %.2f\n", error_estandar))
+cat(sprintf("t crítico: %.3f\n", t_critico))
+cat(sprintf("Límite inferior: S/ %.2f\n", li))
+cat(sprintf("Límite superior: S/ %.2f\n", ls))
+
+cat(sprintf(
+  "IC 95%% = (S/ %.2f ; S/ %.2f)\n",
+  li,
+  ls
+))
+
+
+
+# 17. FIGURA 8
+# 5.3.1. INTERVALO DE CONFIANZA PARA LA MEDIA 95%
+
+
+x_ic_media <- seq(
+  media - 4 * error_estandar,
+  media + 4 * error_estandar,
+  length.out = 500
+)
+
+y_ic_media <- dnorm(
+  x_ic_media,
+  mean = media,
+  sd = error_estandar
+)
+
+datos_ic_media <- data.frame(
+  x = x_ic_media,
+  y = y_ic_media
+)
+
+grafico_ic_media <- ggplot(
+  datos_ic_media,
+  aes(x = x, y = y)
+) +
+  
+  # Área del IC 95%
+  geom_area(
+    data = subset(
+      datos_ic_media,
+      x >= li & x <= ls
+    ),
+    fill = "lightblue",
+    alpha = 0.7
+  ) +
+  
+  # Curva normal
+  geom_line(
+    color = "blue",
+    linewidth = 1.2
+  ) +
+  
+  # Media muestral
+  geom_vline(
+    xintercept = media,
+    color = "red",
+    linewidth = 1
+  ) +
+  
+  # Límite inferior
+  geom_vline(
+    xintercept = li,
+    color = "darkgreen",
+    linetype = "dashed",
+    linewidth = 1
+  ) +
+  
+  # Límite superior
+  geom_vline(
+    xintercept = ls,
+    color = "darkgreen",
+    linetype = "dashed",
+    linewidth = 1
+  ) +
+  
+  labs(
+    title = "Intervalo de confianza del 95% para la media",
+    subtitle = "Gasto mensual en transporte de los estudiantes",
+    x = "Media muestral del gasto mensual (S/)",
+    y = "Densidad"
+  ) +
+  
+  theme_classic() +
+  
+  theme(
+    plot.title = element_text(
+      face = "bold",
+      hjust = 0.5
+    ),
+    plot.subtitle = element_text(
+      hjust = 0.5
+    )
+  )
+
+print(grafico_ic_media)
+
+
+
+# 18. 5.3.2
+# INTERVALO DE CONFIANZA PARA LA PROPORCIÓN 95%
+
+
+n_prop <- length(gasto)
+
+x_exitos <- sum(gasto >= 100)
+
+p_hat <- x_exitos / n_prop
+q_hat <- 1 - p_hat
+
+error_proporcion <- sqrt(
+  (p_hat * q_hat) / n_prop
+)
+
+z_critico <- 1.96
+
+# Intervalo de confianza
+li_prop <- p_hat - z_critico * error_proporcion
+ls_prop <- p_hat + z_critico * error_proporcion
+
+cat("\n")
+cat("============================================\n")
+cat("5.3.2. INTERVALO DE CONFIANZA PARA LA PROPORCIÓN\n")
+cat("============================================\n")
+
+cat("Tamaño de muestra:", n_prop, "\n")
+cat("Número de éxitos:", x_exitos, "\n")
+
+cat(sprintf(
+  "Proporción muestral: %.4f\n",
+  p_hat
+))
+
+cat(sprintf(
+  "Proporción complementaria: %.4f\n",
+  q_hat
+))
+
+cat(sprintf(
+  "Error estándar: %.4f\n",
+  error_proporcion
+))
+
+cat(sprintf(
+  "Z crítico: %.2f\n",
+  z_critico
+))
+
+cat(sprintf(
+  "Límite inferior: %.4f\n",
+  li_prop
+))
+
+cat(sprintf(
+  "Límite superior: %.4f\n",
+  ls_prop
+))
+
+cat(sprintf(
+  "IC 95%% = (%.4f ; %.4f)\n",
+  li_prop,
+  ls_prop
+))
+
+
+
+# 19. FIGURA 9
+# 5.3.2. INTERVALO DE CONFIANZA PARA LA PROPORCIÓN 95%
+
+
+x_ic_prop <- seq(
+  p_hat - 4 * error_proporcion,
+  p_hat + 4 * error_proporcion,
+  length.out = 500
+)
+
+y_ic_prop <- dnorm(
+  x_ic_prop,
+  mean = p_hat,
+  sd = error_proporcion
+)
+
+datos_ic_prop <- data.frame(
+  x = x_ic_prop,
+  y = y_ic_prop
+)
+
+grafico_ic_prop <- ggplot(
+  datos_ic_prop,
+  aes(x = x, y = y)
+) +
+  
+  # Área del IC 95%
+  geom_area(
+    data = subset(
+      datos_ic_prop,
+      x >= li_prop & x <= ls_prop
+    ),
+    fill = "lightgreen",
+    alpha = 0.7
+  ) +
+  
+  # Curva normal
+  geom_line(
+    color = "darkgreen",
+    linewidth = 1.2
+  ) +
+  
+  # Proporción muestral
+  geom_vline(
+    xintercept = p_hat,
+    color = "red",
+    linewidth = 1
+  ) +
+  
+  # Límite inferior
+  geom_vline(
+    xintercept = li_prop,
+    color = "blue",
+    linetype = "dashed",
+    linewidth = 1
+  ) +
+  
+  # Límite superior
+  geom_vline(
+    xintercept = ls_prop,
+    color = "blue",
+    linetype = "dashed",
+    linewidth = 1
+  ) +
+  
+  labs(
+    title = "Intervalo de confianza del 95% para la proporción",
+    subtitle = "Estudiantes que gastan S/100 o más mensuales en transporte",
+    x = "Proporción muestral",
+    y = "Densidad"
+  ) +
+  
+  theme_classic() +
+  
+  theme(
+    plot.title = element_text(
+      face = "bold",
+      hjust = 0.5
+    ),
+    plot.subtitle = element_text(
+      hjust = 0.5
+    )
+  )
+
+print(grafico_ic_prop)
+
+
+
+# 20. RESUMEN FINAL DE INTERVALOS
+
+
+cat("\n")
+cat("============================================\n")
+cat("RESUMEN DE INTERVALOS DE CONFIANZA\n")
+cat("============================================\n")
+
+cat(sprintf(
+  "5.3.1. Media: IC 95%% = (S/ %.2f ; S/ %.2f)\n",
+  li,
+  ls
+))
+
+cat(sprintf(
+  "5.3.2. Proporción: IC 95%% = (%.4f ; %.4f)\n",
+  li_prop,
+  ls_prop
+))
+
+cat(sprintf(
+  "5.3.2. Proporción en porcentaje: IC 95%% = (%.2f%% ; %.2f%%)\n",
+  li_prop * 100,
+  ls_prop * 100
+))
+
+cat("\n")
+cat("============================================\n")
+cat("FIN DEL ANÁLISIS\n")
+cat("============================================\n")
